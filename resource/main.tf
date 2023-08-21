@@ -1,23 +1,25 @@
-provider "aws" {
-  region = "ap-northeast-1 "  # Change this to your desired region
+variable "alarms" {
+  description = "List of alarm configurations"
+  type        = list(object({
+    instance_id   = string
+    threshold     = number
+    metric_name   = string
+    statistics    = string
+    dimensions    = map(string)
+  }))
 }
 
-resource "aws_cloudwatch_metric_alarm" "instance_metric_alarms" {
-  
-  
-  alarm_name          = var.alarm_name
-  comparison_operator = var.comparison_operator
-  evaluation_periods  = var.evaluation_periods
-  metric_name         = local.metric_alarms[count.index].metric_name
-  namespace           = var.namespace
-  period              = var.period
-  statistic           = var.statistic
-  threshold           = var.threshold
-  alarm_description   = var.alarm_description
-  actions_enabled     = false
-
-  dimensions =        var.dimension
-    
-  
+resource "aws_cloudwatch_metric_alarm" "instance_alarms" {
+  count          = length(var.alarms)
+  alarm_name     = "InstanceAlarm-${var.alarms[count.index].instance_id}"
+  comparison_operator = "GreaterThanOrEqualToThreshold"
+  evaluation_periods = "1"
+  metric_name        = var.alarms[count.index].metric_name
+  namespace          = "AWS/EC2"
+  period             = "300"
+  statistic          = var.alarms[count.index].statistics
+  threshold          = var.alarms[count.index].threshold
+  alarm_description  = "Alarm when ${var.alarms[count.index].metric_name} is high"
+  actions_enabled = false
+  dimensions = var.alarms[count.index].dimensions
 }
-
